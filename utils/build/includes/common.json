@@ -83,6 +83,7 @@
 	"src/loaders/CubeTextureLoader.js",
 	"src/loaders/BinaryTextureLoader.js",
 	"src/loaders/CompressedTextureLoader.js",
+	"src/loaders/AsyncCompressedTextureLoader.js",
 	"src/materials/Material.js",
 	"src/materials/LineBasicMaterial.js",
 	"src/materials/LineDashedMaterial.js",
