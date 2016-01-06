@@ -19935,7 +19935,7 @@ THREE.AsyncCompressedTextureLoader = function ( manager ) {
 
 THREE.AsyncCompressedTextureLoader.prototype = {
 
-  constructor: THREE.AsyncCompressedTextureLoader,
+  constructor: THREE.CompressedTextureLoader,
 
   load: function ( url, onLoad, onProgress, onError ) {
 
