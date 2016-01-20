@@ -18863,7 +18863,7 @@ THREE.MaterialLoader.prototype = {
 		if ( json.aoMap !== undefined ) material.aoMap = this.getTexture( json.aoMap );
 		if ( json.aoMapIntensity !== undefined ) material.aoMapIntensity = json.aoMapIntensity;
 
-		// MeshFaceMaterial
+		// MultiMaterial
 
 		if ( json.materials !== undefined ) {
 
@@ -22398,7 +22398,7 @@ THREE.Mesh.prototype.raycast = ( function () {
 		} else if ( geometry instanceof THREE.Geometry ) {
 
 			var fvA, fvB, fvC;
-			var isFaceMaterial = material instanceof THREE.MeshFaceMaterial;
+			var isFaceMaterial = material instanceof THREE.MultiMaterial;
 			var materials = isFaceMaterial === true ? material.materials : null;
 
 			var vertices = geometry.vertices;
@@ -30587,7 +30587,7 @@ THREE.WebGLShadowMap = function ( _renderer, _lights, _objects ) {
 					var geometry = _objects.update( object );
 					var material = object.material;
 
-					if ( material instanceof THREE.MeshFaceMaterial ) {
+					if ( material instanceof THREE.MultiMaterial ) {
 
 						var groups = geometry.groups;
 						var materials = material.materials;
