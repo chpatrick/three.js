@@ -81,6 +81,10 @@ THREE.PVRLoader._parseV3 = function ( pvrDatas ) {
 			bpp = 4;
 			format = THREE.RGBA_PVRTC_4BPPV1_Format;
 			break;
+		case 6: // ETC1
+			bpp = 4;
+			format = THREE.RGB_ETC1_Format;
+			break;
 		default :
 			throw new Error( "pvrtc - unsupported PVR format " + pixelFormat );
 	}
