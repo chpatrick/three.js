@@ -43,6 +43,11 @@ function WebVRManager( renderer ) {
 	cameraVR.layers.enable( 1 );
 	cameraVR.layers.enable( 2 );
 
+	var useDevicePosition = true;
+	var useStandingMode = true;
+	var leftViewMatrix = new Matrix4();
+	var rightViewMatrix = new Matrix4();
+
 	//
 
 	var currentSize, currentPixelRatio;
@@ -85,6 +90,14 @@ function WebVRManager( renderer ) {
 
 	};
 
+	this.shouldUseDevicePositon = function ( value ) {
+		if ( value !== undefined ) shouldUseDevicePositon = value;
+	};
+
+	this.shouldUseStandingMode = function ( value ) {
+		if ( value !== undefined ) shouldUseStandingMode = value;
+	};
+
 	this.setDevice = function ( value ) {
 
 		if ( value !== undefined ) device = value;
@@ -108,18 +121,18 @@ function WebVRManager( renderer ) {
 
 		//
 
-		var stageParameters = device.stageParameters;
+		if (shouldUseStandingMode) {
+			var stageParameters = device.stageParameters;
+			if ( stageParameters ) {
 
-		if ( stageParameters ) {
+				standingMatrix.fromArray( stageParameters.sittingToStandingTransform );
 
-			standingMatrix.fromArray( stageParameters.sittingToStandingTransform );
+			} else {
 
-		} else {
+				standingMatrix.makeTranslation( 0, scope.userHeight, 0 );
 
-			standingMatrix.makeTranslation( 0, scope.userHeight, 0 );
-
+			}
 		}
-
 
 		var pose = frameData.pose;
 		var poseObject = poseTarget !== null ? poseTarget : camera;
@@ -135,7 +148,7 @@ function WebVRManager( renderer ) {
 
 		}
 
-		if ( pose.position !== null ) {
+		if ( pose.position !== null && useDevicePosition ) {
 
 			tempQuaternion.setFromRotationMatrix( standingMatrix );
 			tempPosition.fromArray( pose.position );
@@ -159,15 +172,26 @@ function WebVRManager( renderer ) {
 		cameraVR.matrixWorld.copy( camera.matrixWorld );
 		cameraVR.matrixWorldInverse.copy( camera.matrixWorldInverse );
 
-		cameraL.matrixWorldInverse.fromArray( frameData.leftViewMatrix );
-		cameraR.matrixWorldInverse.fromArray( frameData.rightViewMatrix );
+		if (useDevicePosition) {
+			cameraL.matrixWorldInverse.fromArray( frameData.leftViewMatrix );
+			cameraR.matrixWorldInverse.fromArray( frameData.rightViewMatrix );
+		} else {
+			// Only use the rotation of the viewMatrices.
+			leftViewMatrix.fromArray(frameData.leftViewMatrix);
+			cameraL.matrixWorldInverse.extractRotation( leftViewMatrix );
+
+			rightViewMatrix.fromArray(frameData.rightViewMatrix);
+			cameraR.matrixWorldInverse.extractRotation( rightViewMatrix );
+		}
 
 		// TODO (mrdoob) Double check this code
 
-		standingMatrixInverse.getInverse( standingMatrix );
+		if (shouldUseStandingMode) {
+			standingMatrixInverse.getInverse( standingMatrix );
 
-		cameraL.matrixWorldInverse.multiply( standingMatrixInverse );
-		cameraR.matrixWorldInverse.multiply( standingMatrixInverse );
+			cameraL.matrixWorldInverse.multiply( standingMatrixInverse );
+			cameraR.matrixWorldInverse.multiply( standingMatrixInverse );
+		}
 
 		var parent = poseObject.parent;
 
