@@ -18,9 +18,6 @@ function WebVRManager( renderer ) {
 
 	var poseTarget = null;
 
-	var standingMatrix = new Matrix4();
-	var standingMatrixInverse = new Matrix4();
-
 	if ( typeof window !== 'undefined' && 'VRFrameData' in window ) {
 
 		frameData = new window.VRFrameData();
@@ -28,8 +25,11 @@ function WebVRManager( renderer ) {
 	}
 
 	var matrixWorldInverse = new Matrix4();
-	var tempQuaternion = new Quaternion();
-	var tempPosition = new Vector3();
+	var poseOrientation = new Quaternion();
+	var camPosition = new Vector3();
+	var identityScale = new Vector3(1, 1, 1);
+	var camVRToSitting = new Matrix4();
+	var sittingToCamVR = new Matrix4();
 
 	var cameraL = new PerspectiveCamera();
 	cameraL.bounds = new Vector4( 0.0, 0.0, 0.5, 1.0 );
@@ -98,7 +98,6 @@ function WebVRManager( renderer ) {
 	};
 
 	this.getCamera = function ( camera ) {
-
 		if ( device === null ) return camera;
 
 		device.depthNear = camera.near;
@@ -106,44 +105,23 @@ function WebVRManager( renderer ) {
 
 		device.getFrameData( frameData );
 
-		//
-
-		var stageParameters = device.stageParameters;
-
-		if ( stageParameters ) {
-
-			standingMatrix.fromArray( stageParameters.sittingToStandingTransform );
-
-		} else {
-
-			standingMatrix.makeTranslation( 0, scope.userHeight, 0 );
-
-		}
-
-
 		var pose = frameData.pose;
 		var poseObject = poseTarget !== null ? poseTarget : camera;
 
+		if ( pose.orientation ) {
+			poseOrientation.fromArray(pose.orientation);
+		} else {
+			poseOrientation.set(0, 0, 0, 1);
+		}
+
+		camera.getWorldPosition(camPosition);
+		camVRToSitting.compose(camPosition, poseOrientation, identityScale);
+		sittingToCamVR = camVRToSitting.getInverse(camVRToSitting);
+
 		// We want to manipulate poseObject by its position and quaternion components since users may rely on them.
-		poseObject.matrix.copy( standingMatrix );
-		poseObject.matrix.decompose( poseObject.position, poseObject.quaternion, poseObject.scale );
-
 		if ( pose.orientation !== null ) {
-
-			tempQuaternion.fromArray ( pose.orientation );
-			poseObject.quaternion.multiply( tempQuaternion );
-
+			poseObject.quaternion.fromArray(pose.orientation);
 		}
-
-		if ( pose.position !== null ) {
-
-			tempQuaternion.setFromRotationMatrix( standingMatrix );
-			tempPosition.fromArray( pose.position );
-			tempPosition.applyQuaternion( tempQuaternion );
-			poseObject.position.add( tempPosition );
-
-		}
-
 		poseObject.updateMatrixWorld();
 
 		if ( device.isPresenting === false ) return camera;
@@ -159,15 +137,8 @@ function WebVRManager( renderer ) {
 		cameraVR.matrixWorld.copy( camera.matrixWorld );
 		cameraVR.matrixWorldInverse.copy( camera.matrixWorldInverse );
 
-		cameraL.matrixWorldInverse.fromArray( frameData.leftViewMatrix );
-		cameraR.matrixWorldInverse.fromArray( frameData.rightViewMatrix );
-
-		// TODO (mrdoob) Double check this code
-
-		standingMatrixInverse.getInverse( standingMatrix );
-
-		cameraL.matrixWorldInverse.multiply( standingMatrixInverse );
-		cameraR.matrixWorldInverse.multiply( standingMatrixInverse );
+		cameraL.matrixWorldInverse.copy(sittingToCamVR);
+		cameraR.matrixWorldInverse.copy(sittingToCamVR);
 
 		var parent = poseObject.parent;
 
@@ -216,12 +187,6 @@ function WebVRManager( renderer ) {
 		}
 
 		return cameraVR;
-
-	};
-
-	this.getStandingMatrix = function () {
-
-		return standingMatrix;
 
 	};
 
